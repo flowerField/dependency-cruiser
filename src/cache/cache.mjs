@@ -1,15 +1,15 @@
-const { readFileSync, mkdirSync, writeFileSync } = require("fs");
-const { join } = require("path");
-const meta = require("../extract/transpile/meta");
-const { optionsAreCompatible } = require("./options-compatible");
-const MetadataStrategy = require("./metadata-strategy");
-const ContentStrategy = require("./content-strategy");
+import { readFileSync, mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
+import meta from "../extract/transpile/meta.js";
+import optionsCompatible from "./options-compatible.js";
+import MetadataStrategy from "./metadata-strategy.js";
+import ContentStrategy from "./content-strategy.js";
 
 const CACHE_FILE_NAME = "cache.json";
 
-module.exports = class Cache {
+export default class Cache {
   /**
-   * @param {import("../../types/cache-options").cacheStrategyType=} pCacheStrategy
+   * @param {import("../../types/cache-options.js").cacheStrategyType=} pCacheStrategy
    */
   constructor(pCacheStrategy) {
     this.revisionData = null;
@@ -20,9 +20,9 @@ module.exports = class Cache {
   }
 
   /**
-   * @param {import("../../types/strict-options").IStrictCruiseOptions} pCruiseOptions
-   * @param {import("../..").ICruiseResult} pCachedCruiseResult
-   * @param {import("../..").IRevisionData=} pRevisionData
+   * @param {import("../../types/strict-options.js").IStrictCruiseOptions} pCruiseOptions
+   * @param {import("../../types/dependency-cruiser.js").ICruiseResult} pCachedCruiseResult
+   * @param {import("../../types/dependency-cruiser.js").IRevisionData=} pRevisionData
    * @returns {boolean}
    */
   canServeFromCache(pCruiseOptions, pCachedCruiseResult, pRevisionData) {
@@ -45,7 +45,7 @@ module.exports = class Cache {
         pCachedCruiseResult.revisionData,
         this.revisionData
       ) &&
-      optionsAreCompatible(
+      optionsCompatible.optionsAreCompatible(
         pCachedCruiseResult.summary.optionsUsed,
         pCruiseOptions
       )
@@ -54,7 +54,7 @@ module.exports = class Cache {
 
   /**
    * @param {string} pCacheFolder
-   * @returns {import("../..").ICruiseResult}
+   * @returns {import("../../types/dependency-cruiser.js").ICruiseResult}
    */
   read(pCacheFolder) {
     try {
@@ -68,8 +68,8 @@ module.exports = class Cache {
 
   /**
    * @param {string} pCacheFolder
-   * @param {import("../..").ICruiseResult} pCruiseResult
-   * @param {import("../..").IRevisionData=} pRevisionData
+   * @param {import("../../types/dependency-cruiser.js").ICruiseResult} pCruiseResult
+   * @param {import("../../types/dependency-cruiser.js").IRevisionData=} pRevisionData
    */
   write(pCacheFolder, pCruiseResult, pRevisionData) {
     const lRevisionData = pRevisionData ?? this.revisionData;
@@ -86,4 +86,4 @@ module.exports = class Cache {
       "utf8"
     );
   }
-};
+}

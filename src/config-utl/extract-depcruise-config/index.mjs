@@ -2,7 +2,7 @@ import path from "path";
 import cloneDeep from "lodash/cloneDeep.js";
 import has from "lodash/has.js";
 import resolve from "../../extract/resolve/resolve.js";
-import normalizeResolveOptions from "../../main/resolve-options/normalize.js";
+import normalizeResolveOptions from "../../main/resolve-options/normalize.mjs";
 import readConfig from "./read-config.mjs";
 import mergeConfigs from "./merge-configs.mjs";
 
@@ -59,7 +59,7 @@ export default async function extractDepcruiseConfig(
   const lResolvedFileName = resolve(
     pConfigFileName,
     pBaseDirectory,
-    normalizeResolveOptions(
+    await normalizeResolveOptions(
       {
         extensions: [".js", ".json", ".cjs", ".mjs"],
       },

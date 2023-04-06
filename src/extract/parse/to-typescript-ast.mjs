@@ -1,12 +1,16 @@
-const fs = require("fs");
-const tryRequire = require("semver-try-require");
-const memoize = require("lodash/memoize");
-const { supportedTranspilers } = require("../../../src/meta.js");
-const transpile = require("../transpile");
-const getExtension = require("../../utl/get-extension");
+/* eslint-disable import/exports-last */
+import fs from "fs";
+import tryImport from "semver-try-require";
+import memoize from "lodash/memoize.js";
+import meta from "../../meta.js";
+import transpile from "../transpile/index.mjs";
+import getExtension from "../../utl/get-extension.js";
 
 /** @type {import('typescript')} */
-const typescript = tryRequire("typescript", supportedTranspilers.typescript);
+const typescript = await tryImport(
+  "typescript",
+  meta.supportedTranspilers.typescript
+);
 
 /**
  * Compiles pTypescriptSource into a (typescript) AST
@@ -16,7 +20,7 @@ const typescript = tryRequire("typescript", supportedTranspilers.typescript);
  *                                a babel config
  * @return {object} - a (typescript) AST
  */
-function getASTFromSource(pFileRecord, pTranspileOptions) {
+export function getASTFromSource(pFileRecord, pTranspileOptions) {
   let lSource = pFileRecord.source;
   if (pFileRecord.extension === ".vue") {
     lSource = transpile(pFileRecord, pTranspileOptions);
@@ -50,13 +54,13 @@ function getAST(pFileName, pTranspileOptions) {
   );
 }
 
-const getASTCached = memoize(getAST);
+export const getASTCached = memoize(getAST);
 
-function clearCache() {
+export function clearCache() {
   getASTCached.cache.clear();
 }
 
-module.exports = {
+export default {
   getASTFromSource,
 
   /**

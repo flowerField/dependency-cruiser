@@ -1,4 +1,4 @@
-const meta = require("./meta");
+import meta from "./meta.js";
 
 /**
  * Transpiles the string pFile with the transpiler configured for extension
@@ -11,14 +11,14 @@ const meta = require("./meta");
  *      for supported versions of transpilers
  * @see [meta.js](meta.js) for the extension -> transpiler mapping
  *
- * @param  {any} pFileRecord      Record with source code, an extension and a filename
+ * @param  {{ extension:string; source:string; filename:string; }} pFileRecord      Record with source code, an extension and a filename
  * @param  {any} pTranspilerOptions (optional) object with options influencing
  *                                the underlying transpiler behavior.
  * @return {string}               the transpiled version of the file (or the file
  *                                itself when the function could not find a
  *                                transpiler matching pExtension
  */
-module.exports = function transpile(
+export default function transpile(
   { extension, source, filename },
   pTranspilerOptions
 ) {
@@ -29,4 +29,4 @@ module.exports = function transpile(
   } else {
     return source;
   }
-};
+}

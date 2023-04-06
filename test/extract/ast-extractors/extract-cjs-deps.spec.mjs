@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import extractcommonJSDeps from "../../../src/extract/ast-extractors/extract-cjs-deps.js";
-import { getASTFromSource } from "../../../src/extract/parse/to-javascript-ast.js";
+import { getASTFromSource } from "../../../src/extract/parse/to-javascript-ast.mjs";
 
 const extractcommonJS = (
   pJavaScriptSource,

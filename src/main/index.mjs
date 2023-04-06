@@ -1,25 +1,32 @@
 /* eslint-disable no-magic-numbers */
 
-const Ajv = require("ajv").default;
-const extract = require("../extract");
-const enrich = require("../enrich");
-const cruiseResultSchema = require("../schema/cruise-result.schema.js");
-const meta = require("../extract/transpile/meta");
-const bus = require("../utl/bus");
-const Cache = require("../cache/cache");
-const normalizeFilesAndDirectories = require("./files-and-dirs/normalize");
-const validateRuleSet = require("./rule-set/validate");
-const normalizeRuleSet = require("./rule-set/normalize");
-const {
+import Ajv from "ajv";
+
+import extract from "../extract/index.mjs";
+import enrich from "../enrich/index.js";
+import cruiseResultSchema from "../schema/cruise-result.schema.js";
+import meta from "../extract/transpile/meta.js";
+import bus from "../utl/bus.js";
+import Cache from "../cache/cache.mjs";
+import normalizeFilesAndDirectories from "./files-and-dirs/normalize.js";
+import validateRuleSet from "./rule-set/validate.js";
+import normalizeRuleSet from "./rule-set/normalize.js";
+import {
   validateCruiseOptions,
   validateFormatOptions,
-} = require("./options/validate");
-const {
+} from "./options/validate.js";
+import {
   normalizeCruiseOptions,
   normalizeFormatOptions,
-} = require("./options/normalize");
-const normalizeResolveOptions = require("./resolve-options/normalize");
-const reportWrap = require("./report-wrap");
+} from "./options/normalize.js";
+import normalizeResolveOptions from "./resolve-options/normalize.mjs";
+import reportWrap from "./report-wrap.js";
+
+const TOTAL_STEPS = 9;
+
+function c(pComplete, pTotal = TOTAL_STEPS) {
+  return { complete: pComplete / pTotal };
+}
 
 function validateResultAgainstSchema(pResult) {
   const ajv = new Ajv();
@@ -30,8 +37,8 @@ function validateResultAgainstSchema(pResult) {
     );
   }
 }
-/** @type {import("../..").format} */
-function format(pResult, pFormatOptions = {}) {
+/** @type {import("../../types/dependency-cruiser.js").format} */
+export function format(pResult, pFormatOptions = {}) {
   const lFormatOptions = normalizeFormatOptions(pFormatOptions);
   validateFormatOptions(lFormatOptions);
 
@@ -40,22 +47,16 @@ function format(pResult, pFormatOptions = {}) {
   return reportWrap(pResult, lFormatOptions);
 }
 
-const TOTAL_STEPS = 9;
-
-function c(pComplete, pTotal = TOTAL_STEPS) {
-  return { complete: pComplete / pTotal };
-}
-
-/** @type {import("../..").cruise} */
+/** @type {import("../../types/dependency-cruiser.js").cruise} */
 // eslint-disable-next-line max-lines-per-function, max-statements
-function cruise(
+export async function cruise(
   pFileAndDirectoryArray,
   pCruiseOptions,
   pResolveOptions,
   pTranspileOptions
 ) {
   bus.emit("progress", "parsing options", c(1));
-  /** @type {import("../../types/strict-options").IStrictCruiseOptions} */
+  /** @type {import("../../types/strict-options.js").IStrictCruiseOptions} */
   let lCruiseOptions = normalizeCruiseOptions(
     validateCruiseOptions(pCruiseOptions),
     pFileAndDirectoryArray
@@ -90,7 +91,7 @@ function cruise(
   );
 
   bus.emit("progress", "determining how to resolve", c(4));
-  const lNormalizedResolveOptions = normalizeResolveOptions(
+  const lNormalizedResolveOptions = await normalizeResolveOptions(
     pResolveOptions,
     lCruiseOptions,
     pTranspileOptions?.tsConfig
@@ -120,7 +121,10 @@ function cruise(
   return reportWrap(lCruiseResult, lCruiseOptions);
 }
 
-module.exports = {
+export const allExtensions = meta.allExtensions;
+export const getAvailableTranspilers = meta.getAvailableTranspilers;
+
+export default {
   cruise,
   format,
   allExtensions: meta.allExtensions,

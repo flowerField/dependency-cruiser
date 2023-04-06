@@ -1,9 +1,9 @@
-const has = require("lodash/has");
-const bus = require("../utl/bus");
-const busLogLevels = require("../utl/bus-log-levels");
-const getDependencies = require("./get-dependencies");
-const gatherInitialSources = require("./gather-initial-sources");
-const clearCaches = require("./clear-caches");
+import has from "lodash/has.js";
+import bus from "../utl/bus.js";
+import busLogLevels from "../utl/bus-log-levels.js";
+import getDependencies from "./get-dependencies.mjs";
+import gatherInitialSources from "./gather-initial-sources.mjs";
+import clearCaches from "./clear-caches.mjs";
 
 /* eslint max-params:0 */
 function extractRecursive(
@@ -27,14 +27,14 @@ function extractRecursive(
 
   return lDependencies
     .filter(
-      (pDependency) => pDependency.followable && !pDependency.matchesDoNotFollow
+      ({ followable, matchesDoNotFollow }) => followable && !matchesDoNotFollow
     )
     .reduce(
-      (pAll, pDependency) => {
-        if (!pVisited.has(pDependency.resolved)) {
+      (pAll, { resolved }) => {
+        if (!pVisited.has(resolved)) {
           return pAll.concat(
             extractRecursive(
-              pDependency.resolved,
+              resolved,
               pCruiseOptions,
               pVisited,
               pDepth + 1,
@@ -91,15 +91,12 @@ function extractFileDirectoryArray(
   }, []);
 }
 
-function isNotFollowable(pToDependency) {
-  return !pToDependency.followable;
+function isNotFollowable({ followable }) {
+  return !followable;
 }
 
 function notInFromListAlready(pFromList) {
-  return (pToListItem) =>
-    !pFromList.some(
-      (pFromListItem) => pFromListItem.source === pToListItem.resolved
-    );
+  return ({ resolved }) => !pFromList.some(({ source }) => source === resolved);
 }
 
 function toDependencyToSource(pToListItem) {
@@ -130,8 +127,7 @@ function filterExcludedDynamicDependencies(pModule, pExclude) {
   return {
     ...pModule,
     dependencies: pModule.dependencies.filter(
-      (pDependency) =>
-        !has(pExclude, "dynamic") || pExclude.dynamic !== pDependency.dynamic
+      ({ dynamic }) => !has(pExclude, "dynamic") || pExclude.dynamic !== dynamic
     ),
   };
 }
@@ -141,12 +137,12 @@ function filterExcludedDynamicDependencies(pModule, pExclude) {
  * returns an array of all the modules it finds that way.
  *
  * @param {string[]} pFileDirectoryArray
- * @param {import("../..").IStrictCruiseOptions} pCruiseOptions
- * @param {import("../..").IResolveOptions} pResolveOptions
- * @param {import("../..").ITranspileOptions} pTranspileOptions
- * @returns {Partial<import("../..").IModule[]>}
+ * @param {import("../../types/dependency-cruiser.js").IStrictCruiseOptions} pCruiseOptions
+ * @param {import("../../types/dependency-cruiser.js").IResolveOptions} pResolveOptions
+ * @param {import("../../types/dependency-cruiser.js").ITranspileOptions} pTranspileOptions
+ * @returns {Partial<import("../../types/dependency-cruiser.js").IModule[]>}
  */
-module.exports = function extract(
+export default function extract(
   pFileDirectoryArray,
   pCruiseOptions,
   pResolveOptions,
@@ -167,4 +163,4 @@ module.exports = function extract(
   pResolveOptions.fileSystem.purge();
   clearCaches();
   return lReturnValue;
-};
+}

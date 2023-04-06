@@ -1,10 +1,11 @@
-const fs = require("fs");
-const acorn = require("acorn");
-const acornLoose = require("acorn-loose");
-const acornJsx = require("acorn-jsx");
-const memoize = require("lodash/memoize");
-const transpile = require("../transpile");
-const getExtension = require("../../utl/get-extension");
+/* eslint-disable import/exports-last */
+import fs from "fs";
+import { Parser as acornParser, parse as acornParse } from "acorn";
+import { parse as acornLooseParse } from "acorn-loose";
+import acornJsx from "acorn-jsx";
+import memoize from "lodash/memoize.js";
+import transpile from "../transpile/index.mjs";
+import getExtension from "../../utl/get-extension.js";
 
 /** @type acorn.Options */
 const ACORN_OPTIONS = {
@@ -15,7 +16,7 @@ const ACORN_OPTIONS = {
 const TSCONFIG_CONSTANTS = {
   PRESERVE_JSX: 1,
 };
-const acornJsxParser = acorn.Parser.extend(acornJsx());
+const acornJsxParser = acornParser.extend(acornJsx());
 
 function needsJSXTreatment(pFileRecord, pTranspileOptions) {
   return (
@@ -26,7 +27,7 @@ function needsJSXTreatment(pFileRecord, pTranspileOptions) {
   );
 }
 
-function getASTFromSource(pFileRecord, pTranspileOptions) {
+export function getASTFromSource(pFileRecord, pTranspileOptions) {
   const lJavaScriptSource = transpile(pFileRecord, pTranspileOptions);
 
   try {
@@ -44,9 +45,9 @@ function getASTFromSource(pFileRecord, pTranspileOptions) {
 
     // ecmaVersion 11 necessary for acorn to understand dynamic imports
     // explicitly passing ecmaVersion is recommended from acorn 8
-    return acorn.parse(lJavaScriptSource, ACORN_OPTIONS);
+    return acornParse(lJavaScriptSource, ACORN_OPTIONS);
   } catch (pError) {
-    return acornLoose.parse(lJavaScriptSource, ACORN_OPTIONS);
+    return acornLooseParse(lJavaScriptSource, ACORN_OPTIONS);
   }
 }
 
@@ -73,28 +74,26 @@ function getAST(pFileName, pTranspileOptions) {
   );
 }
 
-const getASTCached = memoize(
+/**
+ * Compiles the file identified by pFileName into a (javascript)
+ * AST and returns it. Subsequent calls for the same file name will
+ * return the result from a cache.
+ *
+ * @param {string} pFileName - the name of the file to compile
+ * @param {any} pTranspileOptions - options for the transpiler(s) - typically a tsconfig or a babel config
+ * @return {acorn.Node} - a (javascript) AST
+ */
+export const getASTCached = memoize(
   getAST,
   (pFileName, pTranspileOptions) => `${pFileName}|${pTranspileOptions}`
 );
 
-function clearCache() {
+export function clearCache() {
   getASTCached.cache.clear();
 }
 
-module.exports = {
+export default {
   getASTFromSource,
-
-  /**
-   * Compiles the file identified by pFileName into a (javascript)
-   * AST and returns it. Subsequent calls for the same file name will
-   * return the result from a cache.
-   *
-   * @param {string} pFileName - the name of the file to compile
-   * @param {any} pTranspileOptions - options for the transpiler(s) - typically a tsconfig or a babel config
-   * @return {acorn.Node} - a (javascript) AST
-   */
   getASTCached,
-
   clearCache,
 };

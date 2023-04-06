@@ -1,47 +1,51 @@
-const { supportedTranspilers } = require("../../../src/meta.js");
-const swc = require("../parse/to-swc-ast");
+const meta = require("../../../src/meta.js");
+const swc = require("../parse/to-swc-ast.js");
 const javaScriptWrap = require("./javascript-wrap");
-const typeScriptWrap = require("./typescript-wrap")();
-const typeScriptESMWrap = require("./typescript-wrap")("esm");
-const typeScriptTsxWrap = require("./typescript-wrap")("tsx");
+const typeScriptWrap = require("./typescript-wrap.js");
 const liveScriptWrap = require("./livescript-wrap");
-const coffeeWrap = require("./coffeescript-wrap")();
-const litCoffeeWrap = require("./coffeescript-wrap")(true);
+const coffeeWrap = require("./coffeescript-wrap");
 const vueWrap = require("./vue-template-wrap");
 const babelWrap = require("./babel-wrap");
-const svelteWrap = require("./svelte-wrap")(typeScriptWrap);
+const svelteDingus = require("./svelte-wrap");
+
+const typeScriptVanillaWrap = typeScriptWrap();
+const typeScriptESMWrap = typeScriptWrap("esm");
+const typeScriptTsxWrap = typeScriptWrap("tsx");
+const coffeeVanillaWrap = coffeeWrap();
+const litCoffeeWrap = coffeeWrap(true);
+const svelteWrap = svelteDingus(typeScriptVanillaWrap);
 
 const EXTENSION2WRAPPER = {
   ".js": javaScriptWrap,
   ".cjs": javaScriptWrap,
   ".mjs": javaScriptWrap,
   ".jsx": javaScriptWrap,
-  ".ts": typeScriptWrap,
+  ".ts": typeScriptVanillaWrap,
   ".tsx": typeScriptTsxWrap,
-  ".d.ts": typeScriptWrap,
-  ".cts": typeScriptWrap,
-  ".d.cts": typeScriptWrap,
+  ".d.ts": typeScriptVanillaWrap,
+  ".cts": typeScriptVanillaWrap,
+  ".d.cts": typeScriptVanillaWrap,
   ".mts": typeScriptESMWrap,
   ".d.mts": typeScriptESMWrap,
   ".vue": vueWrap,
   ".svelte": svelteWrap,
   ".ls": liveScriptWrap,
-  ".coffee": coffeeWrap,
+  ".coffee": coffeeVanillaWrap,
   ".litcoffee": litCoffeeWrap,
   ".coffee.md": litCoffeeWrap,
-  ".csx": coffeeWrap,
-  ".cjsx": coffeeWrap,
+  ".csx": coffeeVanillaWrap,
+  ".cjsx": coffeeVanillaWrap,
 };
 
 const TRANSPILER2WRAPPER = {
   babel: babelWrap,
   javascript: javaScriptWrap,
-  "coffee-script": coffeeWrap,
-  coffeescript: coffeeWrap,
+  "coffee-script": coffeeVanillaWrap,
+  coffeescript: coffeeVanillaWrap,
   livescript: liveScriptWrap,
   svelte: svelteWrap,
   swc,
-  typescript: typeScriptWrap,
+  typescript: typeScriptVanillaWrap,
   "vue-template-compiler": vueWrap,
   "@vue/compiler-sfc": vueWrap,
 };
@@ -125,9 +129,9 @@ module.exports.scannableExtensions =
  * @return {IAvailableTranspiler[]} an array of supported transpilers
  */
 module.exports.getAvailableTranspilers = () =>
-  Object.keys(supportedTranspilers).map((pTranspiler) => ({
+  Object.keys(meta.supportedTranspilers).map((pTranspiler) => ({
     name: pTranspiler,
-    version: supportedTranspilers[pTranspiler],
+    version: meta.supportedTranspilers[pTranspiler],
     available: TRANSPILER2WRAPPER[pTranspiler].isAvailable(),
   }));
 

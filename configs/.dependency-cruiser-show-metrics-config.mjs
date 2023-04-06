@@ -1,3 +1,4 @@
+/** @type {import('../').IConfiguration} */
 export default {
   $schema: "../src/schema/configuration.schema.json",
   extends: "../.dependency-cruiser.json",
@@ -38,6 +39,9 @@ export default {
     },
   ],
   options: {
+    cache: {
+      folder: "node_modules/.cache/dependency-cruiser/show-metrics",
+    },
     includeOnly: { path: "^(bin|src|types)" },
     reporterOptions: {
       text: {

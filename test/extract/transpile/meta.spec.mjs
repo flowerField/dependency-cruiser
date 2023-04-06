@@ -6,7 +6,7 @@ import babelWrap from "../../../src/extract/transpile/babel-wrap.js";
 import vueTemplateWrap from "../../../src/extract/transpile/vue-template-wrap.js";
 
 describe("[U] extract/transpile/meta", () => {
-  it("tells which extensions can be scanned", () => {
+  it("tells which extensio ns can be scanned", () => {
     expect(meta.scannableExtensions).to.deep.equal([
       ".js",
       ".cjs",

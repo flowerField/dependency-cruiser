@@ -1,16 +1,16 @@
-const fs = require("fs");
-const get = require("lodash/get");
-const has = require("lodash/has");
-const _omit = require("lodash/omit");
-const enhancedResolve = require("enhanced-resolve");
-const transpileMeta = require("../../extract/transpile/meta");
-const {
-  ruleSetHasLicenseRule,
-  ruleSetHasDeprecationRule,
-} = require("../../graph-utl/rule-set");
+import fs from "fs";
+import { createRequire } from "module";
+import get from "lodash/get.js";
+import has from "lodash/has.js";
+import omit from "lodash/omit.js";
+import enhancedResolve from "enhanced-resolve";
+import transpileMeta from "../../extract/transpile/meta.js";
+import ruleSet from "../../graph-utl/rule-set.js";
+
+const require = createRequire(import.meta.url);
 
 const DEFAULT_CACHE_DURATION = 4000;
-/** @type {Partial<import("../../..").IResolveOptions>} */
+/** @type {Partial<import("../../../types/dependency-cruiser").IResolveOptions>} */
 const DEFAULT_RESOLVE_OPTIONS = {
   // for later: check semantics of enhanced-resolve symlinks and
   // node's preserveSymlinks. They seem to be
@@ -44,7 +44,7 @@ const DEFAULT_RESOLVE_OPTIONS = {
 /**
  *
  * @param {Number} pCacheDuration
- * @returns {Partial<import("../../..").IResolveOptions>}
+ * @returns {Partial<import("../../../types/dependency-cruiser").IResolveOptions>}
  */
 function getNonOverridableResolveOptions(pCacheDuration) {
   return {
@@ -75,19 +75,16 @@ function compileResolveOptions(
 ) {
   let lResolveOptions = {};
 
-  // TsConfigPathsPlugin requires a baseUrl to be present in the
-  // tsconfig, otherwise it prints scary messages that it didn't
-  // and read the tsConfig (potentially making users think it's
-  // dependency-cruiser disregarding the tsconfig). Hence:
-  // only load TsConfigPathsPlugin when an options.baseUrl
-  // exists
+  // TsConfigPathsPlugin requires a baseUrl to be present in the tsconfig,
+  // otherwise it prints scary messages that it didn't and read the tsConfig
+  // (potentially making users think it's dependency-cruiser disregarding the
+  // tsconfig). Hence: only load TsConfigPathsPlugin when an options.baseUrl exists
   // Also: there's a performance impact of ~1 ms per resolve even when there
   // are 0 paths in the tsconfig, so not loading it when not necessary
   // will be a win.
   // Also: requiring the plugin only when it's necessary will save some
   // startup time (especially on a cold require cache)
   if (pResolveOptions.tsConfig && isTsConfigPathsEligible(pTSConfig)) {
-    // eslint-disable-next-line node/global-require
     const TsConfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
     lResolveOptions.plugins = pushPlugin(
       lResolveOptions.plugins,
@@ -107,7 +104,7 @@ function compileResolveOptions(
   return {
     ...DEFAULT_RESOLVE_OPTIONS,
     ...lResolveOptions,
-    ..._omit(pResolveOptionsFromDCConfig, "cachedInputFileSystem"),
+    ...omit(pResolveOptionsFromDCConfig, "cachedInputFileSystem"),
     ...pResolveOptions,
     ...getNonOverridableResolveOptions(
       get(
@@ -120,18 +117,19 @@ function compileResolveOptions(
 }
 
 /**
- * @param {import("../../..").IResolveOptions} pResolveOptions
- * @param {import("../../..").ICruiseOptions} pOptions
+ * @param {import("../../../types/dependency-cruiser").IResolveOptions} pResolveOptions
+ * @param {import("../../../types/dependency-cruiser").ICruiseOptions} pOptions
  * @param {import("typescript").ParsedTsconfig} pTSConfig
  * @returns
  */
-module.exports = function normalizeResolveOptions(
+export default async function normalizeResolveOptions(
   pResolveOptions,
   pOptions,
   pTSConfig
 ) {
   const lRuleSet = get(pOptions, "ruleSet", {});
-  return compileResolveOptions(
+  // eslint-disable-next-line no-return-await
+  return await compileResolveOptions(
     {
       /*
         for later: check semantics of enhanced-resolve symlinks and
@@ -148,11 +146,11 @@ module.exports = function normalizeResolveOptions(
          resolve options ...
        */
       combinedDependencies: get(pOptions, "combinedDependencies", false),
-      resolveLicenses: ruleSetHasLicenseRule(lRuleSet),
-      resolveDeprecations: ruleSetHasDeprecationRule(lRuleSet),
+      resolveLicenses: ruleSet.ruleSetHasLicenseRule(lRuleSet),
+      resolveDeprecations: ruleSet.ruleSetHasDeprecationRule(lRuleSet),
       ...(pResolveOptions || {}),
     },
     pTSConfig || {},
     get(pOptions, "enhancedResolveOptions", {})
   );
-};
+}

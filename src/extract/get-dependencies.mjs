@@ -1,33 +1,37 @@
-const path = require("path");
-const get = require("lodash/get");
-const uniqBy = require("lodash/uniqBy");
-const { intersects } = require("../utl/array-util");
-const resolve = require("./resolve");
-const extractES6Deps = require("./ast-extractors/extract-es6-deps");
-const extractCommonJSDeps = require("./ast-extractors/extract-cjs-deps");
-const extractAMDDeps = require("./ast-extractors/extract-amd-deps");
-const extractTypeScriptDeps = require("./ast-extractors/extract-typescript-deps");
-const extractSwcDeps = require("./ast-extractors/extract-swc-deps");
-const toJavascriptAST = require("./parse/to-javascript-ast");
-const toTypescriptAST = require("./parse/to-typescript-ast");
-const toSwcAST = require("./parse/to-swc-ast");
-const detectPreCompilationNess = require("./utl/detect-pre-compilation-ness");
-const extractModuleAttributes = require("./utl/extract-module-attributes");
+import path from "path";
+import get from "lodash/get.js";
+import uniqBy from "lodash/uniqBy.js";
+import { intersects } from "../utl/array-util.js";
+import resolve from "./resolve/index.js";
+import extractES6Deps from "./ast-extractors/extract-es6-deps.js";
+import extractCommonJSDeps from "./ast-extractors/extract-cjs-deps.js";
+import extractAMDDeps from "./ast-extractors/extract-amd-deps.js";
+import extractTypeScriptDeps from "./ast-extractors/extract-typescript-deps.js";
+import extractSwcDeps from "./ast-extractors/extract-swc-deps.js";
+import toJavascriptAST from "./parse/to-javascript-ast.mjs";
+import toTypescriptAST from "./parse/to-typescript-ast.mjs";
+import toSwcAST from "./parse/to-swc-ast.js";
+import detectPreCompilationNess from "./utl/detect-pre-compilation-ness.js";
+import extractModuleAttributes from "./utl/extract-module-attributes.js";
 
-function extractFromSwcAST(pOptions, pFileName) {
+function extractFromSwcAST({ baseDir, exoticRequireStrings }, pFileName) {
   return extractSwcDeps(
-    toSwcAST.getASTCached(path.join(pOptions.baseDir, pFileName)),
-    pOptions.exoticRequireStrings
+    toSwcAST.getASTCached(path.join(baseDir, pFileName)),
+    exoticRequireStrings
   );
 }
 
-function extractFromTypeScriptAST(pOptions, pFileName, pTranspileOptions) {
+function extractFromTypeScriptAST(
+  { baseDir, exoticRequireStrings },
+  pFileName,
+  pTranspileOptions
+) {
   return extractTypeScriptDeps(
     toTypescriptAST.getASTCached(
-      path.join(pOptions.baseDir, pFileName),
+      path.join(baseDir, pFileName),
       pTranspileOptions
     ),
-    pOptions.exoticRequireStrings
+    exoticRequireStrings
   );
 }
 
@@ -44,50 +48,49 @@ function isTypeScriptCompatible(pFileName) {
   ].includes(path.extname(pFileName));
 }
 
-function shouldUseTsc(pOptions, pFileName) {
+function shouldUseTsc({ tsPreCompilationDeps, parser }, pFileName) {
   return (
-    (pOptions.tsPreCompilationDeps || pOptions.parser === "tsc") &&
+    (tsPreCompilationDeps || parser === "tsc") &&
     toTypescriptAST.isAvailable() &&
     isTypeScriptCompatible(pFileName)
   );
 }
 
-function shouldUseSwc(pOptions, pFileName) {
+function shouldUseSwc({ parser }, pFileName) {
   return (
-    pOptions.parser === "swc" &&
+    parser === "swc" &&
     toSwcAST.isAvailable() &&
     isTypeScriptCompatible(pFileName)
   );
 }
 
-function extractFromJavaScriptAST(pOptions, pFileName, pTranspileOptions) {
+function extractFromJavaScriptAST(
+  { baseDir, moduleSystems, exoticRequireStrings },
+  pFileName,
+  pTranspileOptions
+) {
   let lDependencies = [];
   const lAST = toJavascriptAST.getASTCached(
-    path.join(pOptions.baseDir, pFileName),
+    path.join(baseDir, pFileName),
     pTranspileOptions
   );
 
-  if (pOptions.moduleSystems.includes("cjs")) {
-    extractCommonJSDeps(
-      lAST,
-      lDependencies,
-      "cjs",
-      pOptions.exoticRequireStrings
-    );
+  if (moduleSystems.includes("cjs")) {
+    extractCommonJSDeps(lAST, lDependencies, "cjs", exoticRequireStrings);
   }
-  if (pOptions.moduleSystems.includes("es6")) {
+  if (moduleSystems.includes("es6")) {
     extractES6Deps(lAST, lDependencies);
   }
-  if (pOptions.moduleSystems.includes("amd")) {
-    extractAMDDeps(lAST, lDependencies, pOptions.exoticRequireStrings);
+  if (moduleSystems.includes("amd")) {
+    extractAMDDeps(lAST, lDependencies, exoticRequireStrings);
   }
 
   return lDependencies;
 }
 
 function extractWithSwc(pCruiseOptions, pFileName) {
-  return extractFromSwcAST(pCruiseOptions, pFileName).filter((pDep) =>
-    pCruiseOptions.moduleSystems.includes(pDep.moduleSystem)
+  return extractFromSwcAST(pCruiseOptions, pFileName).filter(
+    ({ moduleSystem }) => pCruiseOptions.moduleSystems.includes(moduleSystem)
   );
 }
 
@@ -96,7 +99,9 @@ function extractWithTsc(pCruiseOptions, pFileName, pTranspileOptions) {
     pCruiseOptions,
     pFileName,
     pTranspileOptions
-  ).filter((pDep) => pCruiseOptions.moduleSystems.includes(pDep.moduleSystem));
+  ).filter(({ moduleSystem }) =>
+    pCruiseOptions.moduleSystems.includes(moduleSystem)
+  );
 
   if (pCruiseOptions.tsPreCompilationDeps === "specify") {
     lDependencies = detectPreCompilationNess(
@@ -109,13 +114,13 @@ function extractWithTsc(pCruiseOptions, pFileName, pTranspileOptions) {
 
 /**
  *
- * @param {import('../..').IStrictCruiseOptions} pCruiseOptions
+ * @param {import('../../types/dependency-cruiser.js').IStrictCruiseOptions} pCruiseOptions
  * @param {string} pFileName
  * @param {any} pTranspileOptions
- * @returns {import('../../types/cruise-result').IDependency[]}
+ * @returns {import('../../types/cruise-result.js').IDependency[]}
  */
 function extractDependencies(pCruiseOptions, pFileName, pTranspileOptions) {
-  /** @type import('../../types/cruise-result').IDependency[] */
+  /** @type import('../../types/cruise-result.js').IDependency[] */
   let lDependencies = [];
 
   if (!pCruiseOptions.extraExtensionsToScan.includes(path.extname(pFileName))) {
@@ -142,29 +147,30 @@ function extractDependencies(pCruiseOptions, pFileName, pTranspileOptions) {
   }));
 }
 
-function matchesDoNotFollow(pResolved, pDoNotFollow) {
+function matchesDoNotFollow({ resolved, dependencyTypes }, pDoNotFollow) {
   const lMatchesPath = Boolean(pDoNotFollow.path)
-    ? RegExp(pDoNotFollow.path, "g").test(pResolved.resolved)
+    ? RegExp(pDoNotFollow.path, "g").test(resolved)
     : false;
   const lMatchesDependencyTypes = Boolean(pDoNotFollow.dependencyTypes)
-    ? intersects(pResolved.dependencyTypes, pDoNotFollow.dependencyTypes)
+    ? intersects(dependencyTypes, pDoNotFollow.dependencyTypes)
     : false;
 
   return lMatchesPath || lMatchesDependencyTypes;
 }
 
-function addResolutionAttributes(pOptions, pFileName, pResolveOptions) {
+function addResolutionAttributes(
+  { baseDir, doNotFollow },
+  pFileName,
+  pResolveOptions
+) {
   return function addAttributes(pDependency) {
     const lResolved = resolve(
       pDependency,
-      pOptions.baseDir,
-      path.join(pOptions.baseDir, path.dirname(pFileName)),
+      baseDir,
+      path.join(baseDir, path.dirname(pFileName)),
       pResolveOptions
     );
-    const lMatchesDoNotFollow = matchesDoNotFollow(
-      lResolved,
-      pOptions.doNotFollow
-    );
+    const lMatchesDoNotFollow = matchesDoNotFollow(lResolved, doNotFollow);
 
     return {
       ...pDependency,
@@ -181,13 +187,13 @@ function matchesPattern(pFullPathToFile, pPattern) {
 
 /**
  *
- * @param {import("../..").IDependency} pDependency
+ * @param {import("../../types/dependency-cruiser.js").IDependency} pDependency
  * @returns {string}
  */
-function getDependencyUniqueKey(pDependency) {
-  return `${pDependency.module} ${pDependency.moduleSystem} ${(
-    pDependency.dependencyTypes || []
-  ).includes("type-only")}`;
+function getDependencyUniqueKey({ module, moduleSystem, dependencyTypes }) {
+  return `${module} ${moduleSystem} ${(dependencyTypes || []).includes(
+    "type-only"
+  )}`;
 }
 
 function compareDeps(pLeft, pRight) {
@@ -208,14 +214,14 @@ function compareDeps(pLeft, pRight) {
  *
  *
  * @param  {string} pFileName path to the file
- * @param  {import("../..").IStrictCruiseOptions} pCruiseOptions cruise options
- * @param {import("../..").IResolveOptions} pResolveOptions  webpack 'enhanced-resolve' options
- * @param  {import("../..").ITranspileOptions} pTranspileOptions       an object with tsconfig ('typescript project') options
+ * @param  {import("../../types/dependency-cruiser.js").IStrictCruiseOptions} pCruiseOptions cruise options
+ * @param {import("../../types/dependency-cruiser.js").IResolveOptions} pResolveOptions  webpack 'enhanced-resolve' options
+ * @param  {import("../../types/dependency-cruiser.js").ITranspileOptions} pTranspileOptions       an object with tsconfig ('typescript project') options
  *                               ('flattened' so there's no need for file access on any
  *                               'extends' option in there)
- * @return {import("../..").IDependency[]} an array of dependency objects (see above)
+ * @return {import("../../types/dependency-cruiser.js").IDependency[]} an array of dependency objects (see above)
  */
-module.exports = function getDependencies(
+export default function getDependencies(
   pFileName,
   pCruiseOptions,
   pResolveOptions,
@@ -229,15 +235,15 @@ module.exports = function getDependencies(
       .sort(compareDeps)
       .map(addResolutionAttributes(pCruiseOptions, pFileName, pResolveOptions))
       .filter(
-        (pDep) =>
+        ({ resolved }) =>
           (!get(pCruiseOptions, "exclude.path") ||
-            !matchesPattern(pDep.resolved, pCruiseOptions.exclude.path)) &&
+            !matchesPattern(resolved, pCruiseOptions.exclude.path)) &&
           (!get(pCruiseOptions, "includeOnly.path") ||
-            matchesPattern(pDep.resolved, pCruiseOptions.includeOnly.path))
+            matchesPattern(resolved, pCruiseOptions.includeOnly.path))
       );
   } catch (pError) {
     throw new Error(
       `Extracting dependencies ran afoul of...\n\n  ${pError.message}\n... in ${pFileName}\n\n`
     );
   }
-};
+}

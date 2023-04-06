@@ -1,16 +1,15 @@
-const fs = require("fs");
-const path = require("path");
-const glob = require("glob");
-const get = require("lodash/get");
-const filenameMatchesPattern =
-  require("../graph-utl/match-facade").filenameMatchesPattern;
-const getExtension = require("../utl/get-extension");
-const pathToPosix = require("../utl/path-to-posix");
-const transpileMeta = require("./transpile/meta");
+import fs from "fs";
+import path from "path";
+import { glob } from "glob";
+import get from "lodash/get.js";
+import { filenameMatchesPattern } from "../graph-utl/match-facade.js";
+import getExtension from "../utl/get-extension.js";
+import pathToPosix from "../utl/path-to-posix.js";
+import transpileMeta from "./transpile/meta.js";
 
 /**
  *
- * @param {import('../../types/options').IStrictCruiseOptions} pOptions
+ * @param {import('../../types/options.js').IStrictCruiseOptions} pOptions
  * @returns {string[]}
  */
 function getScannableExtensions(pOptions) {
@@ -42,7 +41,7 @@ function shouldNotBeExcluded(pFullPathToFile, pOptions) {
 /**
  *
  * @param {string} pDirectoryName
- * @param  {import('../../types/options').IStrictCruiseOptions} pOptions options that
+ * @param  {import('../../types/options.js').IStrictCruiseOptions} pOptions options that
  * @returns {string[]}
  */
 function gatherScannableFilesFromDirectory(pDirectoryName, pOptions) {
@@ -85,17 +84,14 @@ function gatherScannableFilesFromDirectory(pDirectoryName, pOptions) {
  *
  * @param  {string[]} pFileAndDirectoryArray globs and/ or paths to files or
  *                               directories to be gathered
- * @param  {import('../..').IStrictCruiseOptions} pOptions options that
+ * @param  {import('../../types/dependency-cruiser.js').IStrictCruiseOptions} pOptions options that
  *                               influence what needs to be gathered/ scanned
  *                               notably useful attributes:
  *                               - exclude - regexp of what to exclude
  *                               - includeOnly - regexp what to include
  * @return {string[]}            paths to files to be gathered.
  */
-module.exports = function gatherInitialSources(
-  pFileAndDirectoryArray,
-  pOptions
-) {
+export default function gatherInitialSources(pFileAndDirectoryArray, pOptions) {
   const lOptions = { baseDir: process.cwd(), ...pOptions };
 
   return pFileAndDirectoryArray
@@ -120,4 +116,4 @@ module.exports = function gatherInitialSources(
       }
     }, [])
     .sort();
-};
+}

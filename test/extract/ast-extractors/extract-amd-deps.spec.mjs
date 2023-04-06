@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import extractAMDDeps from "../../../src/extract/ast-extractors/extract-amd-deps.js";
-import { getASTFromSource } from "../../../src/extract/parse/to-javascript-ast.js";
+import { getASTFromSource } from "../../../src/extract/parse/to-javascript-ast.mjs";
 
 const extractAMD = (
   pJavaScriptSource,
